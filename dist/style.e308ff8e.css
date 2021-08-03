@@ -1,0 +1,66 @@
+@font-face {
+    font-family: Mermaid;
+    src: url(/Mermaid1001.2a83be59.ttf);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body,
+html {
+    overscroll-behavior: none;
+    background: rgb(1, 1, 2);
+    height: 100vh;
+    width: 100%;
+}
+
+main {
+    position: fixed;
+    width: 100%;
+    height: 100vh;
+}
+
+.scrollable {
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    will-change: transform;
+}
+
+.image-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+h1 {
+    font-family: Mermaid;
+    font-size: 3rem;
+    position: absolute;
+    left: 55%;
+    top: 72%;
+    z-index: 5;
+    color: rgb(157, 168, 168);
+}
+
+img {
+    position: absolute;
+    height: 50%;
+}
+
+canvas {
+    position: fixed;
+    z-index: -1;
+    top: 0;
+    left: 0;
+}
+
+/*# sourceMappingURL=/style.e308ff8e.css.map */

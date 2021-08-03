@@ -1,0 +1,23 @@
+{
+  "name": "rgb-split-effect",
+  "version": "1.0.0",
+  "description": "RGB Split effect WEBGL",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Thibaud-Mathis/rgb-split-effect.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Thibaud-Mathis/rgb-split-effect/issues"
+  },
+  "homepage": "https://github.com/Thibaud-Mathis/rgb-split-effect#readme",
+  "dependencies": {
+    "three": "^0.131.2"
+  }
+}
