@@ -36416,10 +36416,20 @@ if (typeof window !== 'undefined') {
     window.__THREE__ = REVISION;
   }
 }
+},{}],"js/shaders/vertex.glsl":[function(require,module,exports) {
+module.exports = "#define GLSLIFY 1\nuniform sampler2D uTexture;\nuniform vec2 uOffset;\nvarying vec2 vUv;\n\n#define M_PI 3.1415926535897932384626433832795\n\nvec3 deformationCurve(vec3 position, vec2 uv, vec2 offset) {\n   position.x = position.x + (sin(uv.y * M_PI) * offset.x);\n   position.y = position.y + (sin(uv.x * M_PI) * offset.y);\n   return position;\n}\n\nvoid main() {\n   vUv = uv;\n   vec3 newPosition = deformationCurve(position, uv, uOffset);\n   gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );\n}";
+},{}],"js/shaders/fragment.glsl":[function(require,module,exports) {
+module.exports = "#define GLSLIFY 1\n uniform sampler2D uTexture;\n uniform float uAlpha;\n uniform vec2 uOffset;\n varying vec2 vUv;\n\nvec3 rgbShift(sampler2D textureImage, vec2 uv, vec2 offset) {\n   float r = texture2D(textureImage,uv + offset * 2.0).r;\n   float g = texture2D(textureImage,uv + offset).g;\n   float b = texture2D(textureImage,uv).b;\n   return vec3(r,g,b);\n }\n\nvoid main() {\n   vec3 color = rgbShift(uTexture,vUv,uOffset);\n   gl_FragColor = vec4(color,uAlpha);\n }";
 },{}],"js/app.js":[function(require,module,exports) {
 "use strict";
 
 var THREE = _interopRequireWildcard(require("three"));
+
+var _vertex = _interopRequireDefault(require("./shaders/vertex.glsl"));
+
+var _fragment = _interopRequireDefault(require("./shaders/fragment.glsl"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
 
@@ -36455,14 +36465,12 @@ var lerp = function lerp(start, end, time) {
 
 var init = function init() {
   document.body.style.height = "".concat(scrollable.getBoundingClientRect().height, "px");
-  console.log(document.body.style.height);
 };
 
 var smoothScroll = function smoothScroll() {
   target = window.scrollY;
   current = lerp(current, target, ease);
   scrollable.style.transform = "translate3d(0, ".concat(-current, "px, 0)");
-  requestAnimationFrame(smoothScroll);
 };
 
 var EffectCanvas = /*#__PURE__*/function () {
@@ -36511,19 +36519,108 @@ var EffectCanvas = /*#__PURE__*/function () {
     key: "onWindowResize",
     value: function onWindowResize() {
       init();
-      this.camera.aspect = this.viewport.aspect;
+      this.camera.aspect = this.viewport.aspectRatio;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(this.viewport.width, this.viewport.height);
+    }
+  }, {
+    key: "createMeshItems",
+    value: function createMeshItems() {
+      var _this = this;
+
+      this.images.forEach(function (image) {
+        var meshItem = new MeshItem(image, _this.scene);
+
+        _this.meshItems.push(meshItem);
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      smoothScroll();
+
+      for (var i = 0; i < this.meshItems.length; i++) {
+        this.meshItems[i].render();
+      }
+
+      this.renderer.render(this.scene, this.camera);
+      requestAnimationFrame(this.render.bind(this));
     }
   }]);
 
   return EffectCanvas;
 }();
 
-init();
-smoothScroll();
+var MeshItem = /*#__PURE__*/function () {
+  function MeshItem(element, scene) {
+    _classCallCheck(this, MeshItem);
+
+    this.element = element;
+    this.scene = scene;
+    this.offset = new THREE.Vector2(0, 0);
+    this.sizes = new THREE.Vector2(0, 0);
+    this.createMesh();
+  }
+
+  _createClass(MeshItem, [{
+    key: "getDimensions",
+    value: function getDimensions() {
+      var _this$element$getBoun = this.element.getBoundingClientRect(),
+          width = _this$element$getBoun.width,
+          height = _this$element$getBoun.height,
+          top = _this$element$getBoun.top,
+          left = _this$element$getBoun.left;
+
+      this.sizes.set(width, height);
+      this.offset.set(left - window.innerHeight / 2 + width / 2, -top + window.innerHeight / 2 - height / 2);
+    }
+  }, {
+    key: "createMesh",
+    value: function createMesh() {
+      this.geometry = new THREE.PlaneBufferGeometry(1, 1, 100, 100);
+      this.imageTexture = new THREE.TextureLoader().load(this.element.src);
+      this.uniforms = {
+        uTexture: {
+          value: this.imageTexture
+        },
+        uOffset: {
+          value: new THREE.Vector2(0.0, 0.0)
+        },
+        uAlpha: {
+          value: 1.0
+        }
+      };
+      this.material = new THREE.ShaderMaterial({
+        uniforms: this.uniforms,
+        vertexShader: _vertex.default,
+        fragmentShader: _fragment.default,
+        transparent: true,
+        // wireframe: true,
+        side: THREE.DoubleSide
+      });
+      this.mesh = new THREE.Mesh(this.geometry, this.material);
+      this.getDimensions();
+      this.mesh.position.set(this.offset.x, this.offset.y, 0);
+      this.mesh.scale.set(this.sizes.x, this.sizes.y, 1);
+      this.scene.add(this.mesh);
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      this.getDimensions();
+      this.mesh.position.set(this.offset.x, this.offset.y, 0);
+      this.mesh.scale.set(this.sizes.x, this.sizes.y, 1);
+      this.uniforms.uOffset.value.set(this.offset.x * 0.0, -(target - current) * 0.0002);
+    }
+  }]);
+
+  return MeshItem;
+}();
+
+init(); // smoothScroll()
+
 new EffectCanvas();
-},{"three":"node_modules/three/build/three.module.js"}],"../../../AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"three":"node_modules/three/build/three.module.js","./shaders/vertex.glsl":"js/shaders/vertex.glsl","./shaders/fragment.glsl":"js/shaders/fragment.glsl"}],"../../../AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -36551,7 +36648,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "2338" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "1033" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

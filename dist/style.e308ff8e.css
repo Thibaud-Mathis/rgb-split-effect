@@ -54,6 +54,7 @@ h1 {
 img {
     position: absolute;
     height: 50%;
+    opacity: 0;
 }
 
 canvas {
